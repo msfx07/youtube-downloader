@@ -21,6 +21,7 @@
 - [Features](#features)
 - [Architecture](#architecture)
 - [Dependencies](#dependencies)
+- [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 ---
@@ -107,6 +108,38 @@ youtube-downloader/
 ## Dependencies
 
 Python 3.11, yt-dlp, FFmpeg, Flask, gunicorn, gevent.
+
+---
+
+## Troubleshooting
+
+### Docker build fails: `i/o timeout` pulling base image
+
+**Error:**
+```
+failed to solve: python:3.11-slim: ... dial tcp X.X.X.X:443: i/o timeout
+```
+
+Docker Hub is reachable but a specific IP timed out (Docker Hub is multi-IP; one may be flaky). Usually transient.
+
+**Fix:**
+
+1. Verify Docker Hub is reachable from your server:
+   ```bash
+   curl -v https://registry-1.docker.io/v2/
+   ```
+   Expected response: `HTTP/2 401` — means network is fine, Docker Hub is up.
+
+2. Pull the base image directly to force a retry:
+   ```bash
+   docker pull python:3.11-slim
+   ```
+
+3. If still failing, restart the Docker daemon (clears DNS/connection cache):
+   ```bash
+   sudo systemctl restart docker
+   docker compose up --build -d
+   ```
 
 ---
 
