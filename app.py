@@ -16,10 +16,6 @@ from typing import Generator
 from urllib.parse import urlparse, urlencode, parse_qsl, urlunparse
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
-from flask_limiter import Limiter
-from flask_limiter.errors import RateLimitExceeded
-from flask_limiter.util import get_remote_address
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 from downloader import DownloadConfig, build_options
 import yt_dlp
@@ -31,19 +27,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=[],
-    storage_uri="memory://",
-)
-
-
-@app.errorhandler(RateLimitExceeded)
-def rate_limit_handler(e: RateLimitExceeded) -> tuple[Response, int]:
-    return jsonify({"error": "Rate limit exceeded. Try again later."}), 429
 
 DOWNLOADS_DIR = Path(os.environ.get("DOWNLOADS_DIR", "/downloads"))
 JOB_TTL = 3600       # seconds before job is cleaned up
@@ -215,7 +198,6 @@ def _run_download(job_id: str, url: str, config: DownloadConfig) -> None:
 
 
 @app.post("/download")
-@limiter.limit("5/hour")
 def start_download() -> Response:
     data = request.get_json(silent=True) or {}
     result = _validate_request(data)
@@ -275,7 +257,6 @@ def cancel_download(job_id: str) -> Response:
 
 
 @app.get("/file/<job_id>")
-@limiter.limit("10/hour")
 def serve_file(job_id: str) -> Response:
     with jobs_lock:
         job = jobs.get(job_id)
