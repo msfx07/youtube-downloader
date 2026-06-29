@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    image: youtube-downloader
+    container_name: youtube-downloader-web
+    volumes:
+      - ./downloads:/downloads
+    restart: unless-stopped
+    networks:
+      - proxy_net0
+
+networks:
+  proxy_net0:
+    external: true

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found — YouTube Downloader</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2316213e'/><path d='M16 6v12M10 13l6 7 6-7' stroke='%23e94560' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' fill='none'/><line x1='9' y1='25' x2='23' y2='25' stroke='%23e94560' stroke-width='3' stroke-linecap='round'/></svg>">
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');</script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script async src="https://analytics.sandbox99.cc/static/analitika.js"></script>
+</head>
+<body>
+<div class="card card-404">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9728;</button>
+    <div class="code">404</div>
+    <h1>Page Not Found</h1>
+    <p>The page you're looking for doesn't exist or has been removed.</p>
+    <a class="btn-primary" href="/">Go to Downloader</a>
+</div>
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>

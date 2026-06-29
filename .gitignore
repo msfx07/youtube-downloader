@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.venv/
+venv/
+
+# Tools / IDE
+.claude/
+.continue/
+.superpowers/
+CLAUDE.md
+
+# Project-specific (localhost branch only)
+downloader.py
+tests/
+docs/
+downloads/
+docker-compose-localhost.yml
+
+# Misc
+.env
+*.log
+*.sqlite
+*.db
+.DS_Store

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fair Use Policy — YouTube Downloader</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2316213e'/><path d='M16 6v12M10 13l6 7 6-7' stroke='%23e94560' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' fill='none'/><line x1='9' y1='25' x2='23' y2='25' stroke='%23e94560' stroke-width='3' stroke-linecap='round'/></svg>">
+    <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');</script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script async src="https://analytics.sandbox99.cc/static/analitika.js"></script>
+</head>
+<body>
+<div class="card">
+    <div class="card-header">
+        <h1>Fair Use Policy</h1>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9728;</button>
+    </div>
+
+    <h2>Rate Limits</h2>
+    <ul>
+        <li><strong>5 downloads per hour</strong> per IP address</li>
+        <li><strong>10 file retrievals per hour</strong> per IP address</li>
+        <li>Limits reset automatically after 1 hour</li>
+    </ul>
+
+    <h2>File Storage</h2>
+    <ul>
+        <li>Downloaded files are stored temporarily on the server</li>
+        <li>Files are <strong>deleted automatically 5 seconds</strong> after you click Save</li>
+        <li>Uncollected files (errors, cancels, abandoned downloads) are deleted within <strong>1 hour</strong></li>
+        <li>Do not rely on this service as permanent storage</li>
+    </ul>
+
+    <h2>Accepted URLs</h2>
+    <ul>
+        <li>YouTube only: <code>youtube.com</code>, <code>youtu.be</code>, <code>m.youtube.com</code></li>
+        <li>HTTPS URLs only</li>
+        <li>Playlist links are accepted — only the individual video is downloaded, not the full playlist</li>
+    </ul>
+
+    <h2>Intended Use</h2>
+    <p>This tool is provided for personal, non-commercial use. Only download content you have the right to download. Respect YouTube's Terms of Service and applicable copyright law.</p>
+
+    <a class="back" href="/">&larr; Back to downloader</a>
+</div>
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>
