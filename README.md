@@ -8,6 +8,8 @@
 [![yt-dlp](https://img.shields.io/badge/yt--dlp-latest-red.svg)](https://github.com/yt-dlp/yt-dlp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
+**Live demo:** [https://ytd.sandbox99.cc](https://ytd.sandbox99.cc)
+
 ---
 
 ## Table of Contents
@@ -87,6 +89,7 @@ youtube-downloader/
 - **Playlist protection:** playlist params (`list`, `index`, `start_radio`, `pp`) stripped automatically — always downloads a single video
 - **Cancel:** stop an in-progress download at any time (best-effort — cannot interrupt FFmpeg post-processing)
 - **Form lock:** resolution, format, audio, and URL inputs disable while download is active
+- **Rate limiting:** no rate limit on localhost. Rate limiting (`5 downloads/hour`, `10 file serves/hour` per IP) applies only on the public-facing deployment (`youtube-downloader-web` branch with Caddy)
 
 ---
 
