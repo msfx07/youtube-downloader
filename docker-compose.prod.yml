@@ -1,0 +1,41 @@
+services:
+  web:
+    build: .
+    image: youtube-downloader:v1.0
+    container_name: youtube-downloader-web
+    # ports:
+    #   - "5000:5000"
+    volumes:
+      - ./downloads:/downloads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - proxy-net
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+      - /.gunicorn:rw,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  proxy-net:
+    external: true
