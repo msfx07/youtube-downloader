@@ -14,7 +14,7 @@
 
 ## Table of Contents
 
-- [Branches](#branches)
+- [Branch](#branch)
 - [Quick Start](#quick-start)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -28,12 +28,11 @@
 
 ---
 
-## Branches
+## Branch
 
 | Branch | Interface | How to run |
 |---|---|---|
-| `master` | Browser UI (localhost only) | `docker-compose up` |
-| `youtube-downloader-web` | Browser UI (+ Caddy HTTPS) | `docker-compose up` |
+| `master` | Browser UI (localhost) | `docker-compose up` |
 
 ---
 
