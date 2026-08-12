@@ -43,7 +43,7 @@ localhost {
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 
 		# Content Security Policy
-		Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.sandbox99.cc; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"
 
 		# Remove server identification
 		-Server
