@@ -42,21 +42,28 @@
 
 - Docker + Docker Compose
 
-### Start (local dev)
+### Local Development
 
 ```bash
 docker-compose up --build
 ```
 
-Open [http://localhost:5000](http://localhost:5000).
+Opens at [http://localhost:5000](http://localhost:5000). No TLS, no hardening — just for local testing.
 
-### Start (production)
+### Production Options
 
-```bash
-docker compose -f docker-compose.prod.yml up --build -d
-```
+| Scenario | Command | TLS | Notes |
+|----------|---------|-----|-------|
+| **Own reverse proxy** | `docker compose -f docker-compose.prod.yml up --build -d` | Your proxy handles it | Use this if you already have Caddy, nginx, etc. on the host |
+| **Built-in Caddy (new)** | `docker compose -f docker-compose.caddy.yml up --build -d` | Auto Let's Encrypt | Best for new deployments — Caddy container included |
+| **Local testing (Caddy)** | `docker compose -f docker-compose.caddy.yml up --build -d` | Self-signed (`localhost`) | Edit `Caddyfile` to replace `localhost` with your domain before deploying |
 
-Production uses a reverse proxy (Caddy, nginx) to handle TLS and forward traffic to the container.
+**Caddy deployment steps:**
+1. Edit `Caddyfile` — replace `localhost` with your domain, remove `tls internal`, set your email
+2. Run `docker compose -f docker-compose.caddy.yml up --build -d`
+3. Caddy auto-provisions a Let's Encrypt certificate
+
+The `docker-compose.prod.yml` and `docker-compose.caddy.yml` share the same hardened web container (read-only filesystem, non-root user, memory limits, dropped capabilities). The difference is that `caddy` adds a Caddy container for TLS termination and security headers.
 
 ---
 
@@ -93,10 +100,10 @@ youtube-downloader/
 ├── requirements.txt        # Production deps
 ├── requirements-dev.txt    # Dev/test deps
 ├── Dockerfile              # python:3.11-slim + ffmpeg + gunicorn
-├── docker-compose.yml      # Local dev (port 5000)
-├── docker-compose.prod.yml # Production (container hardening)
-├── docker-compose.caddy.yml # Production + Caddy reverse proxy (TLS, SSE)
-├── Caddyfile               # Caddy config (TLS, security headers, scanner blocking)
+├── docker-compose.yml      # Local dev (port 5000, no hardening)
+├── docker-compose.prod.yml # Production hardened (your own reverse proxy)
+├── docker-compose.caddy.yml # Production + built-in Caddy (TLS, headers, SSE)
+├── Caddyfile               # Caddy config (edit domain + email before deploy)
 ├── .dockerignore           # Build context exclusions
 ├── SECURITY.md             # Security policy & deployment checklist
 ├── CHANGES.md              # Changelog
