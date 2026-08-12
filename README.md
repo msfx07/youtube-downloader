@@ -42,13 +42,21 @@
 
 - Docker + Docker Compose
 
-### Start
+### Start (local dev)
 
 ```bash
 docker-compose up --build
 ```
 
 Open [http://localhost:5000](http://localhost:5000).
+
+### Start (production)
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Production uses a reverse proxy (Caddy, nginx) to handle TLS and forward traffic to the container.
 
 ---
 
@@ -69,27 +77,28 @@ Open [http://localhost:5000](http://localhost:5000).
 
 ```
 youtube-downloader/
-├── app.py              # Flask app: routes, SSE, job store, cleanup thread
-├── downloader.py       # yt-dlp download logic (CLI + library)
+├── app.py                  # Flask app: routes, SSE, job store, cleanup thread
+├── downloader.py           # yt-dlp download logic (CLI + library)
 ├── templates/
-│   ├── index.html      # Single-page UI (vanilla JS + CSS)
-│   ├── 404.html        # Custom 404 page
-│   └── policy.html     # Fair use policy page
+│   ├── index.html          # Single-page UI (vanilla JS + CSS)
+│   ├── 404.html            # Custom 404 page
+│   └── policy.html         # Fair use policy page
 ├── static/
-│   ├── index.js        # Frontend JS (form, SSE, progress)
-│   ├── style.css       # Styles (dark/light theme)
-│   └── theme.js        # Theme toggle
+│   ├── index.js            # Frontend JS (form, SSE, progress)
+│   ├── style.css           # Styles (dark/light theme)
+│   └── theme.js            # Theme toggle
 ├── tests/
-│   ├── test_app.py     # Flask route & integration tests
+│   ├── test_app.py         # Flask route & integration tests
 │   └── test_downloader.py  # Downloader unit tests
-├── requirements.txt    # Production deps
-├── requirements-dev.txt # Dev/test deps
-├── Dockerfile          # python:3.11-slim + ffmpeg + gunicorn (non-root)
-├── docker-compose.yml  # Port 5000 + /downloads volume + healthcheck + container hardening
-├── docker-compose.dev.yml  # Local dev overrides (debug, auto-reload, host volume)
-├── SECURITY.md         # Security policy & deployment checklist
-├── CHANGES.md          # Changelog
-└── LICENSE             # MIT
+├── requirements.txt        # Production deps
+├── requirements-dev.txt    # Dev/test deps
+├── Dockerfile              # python:3.11-slim + ffmpeg + gunicorn
+├── docker-compose.yml      # Local dev (port 5000)
+├── docker-compose.prod.yml # Production (container hardening, no port bind)
+├── .dockerignore           # Build context exclusions
+├── SECURITY.md             # Security policy & deployment checklist
+├── CHANGES.md              # Changelog
+└── LICENSE                 # MIT
 ```
 
 ---
