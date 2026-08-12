@@ -20,8 +20,10 @@
 - [Project Structure](#project-structure)
 - [Features](#features)
 - [Architecture](#architecture)
+- [Security](#security)
 - [Dependencies](#dependencies)
 - [Troubleshooting](#troubleshooting)
+- [Changelog](#changelog)
 - [License](#license)
 
 ---
@@ -69,15 +71,25 @@ Open [http://localhost:5000](http://localhost:5000).
 ```
 youtube-downloader/
 ├── app.py              # Flask app: routes, SSE, job store, cleanup thread
+├── downloader.py       # yt-dlp download logic (CLI + library)
 ├── templates/
-│   └── index.html      # Single-page UI (vanilla JS + CSS, no CDN)
+│   ├── index.html      # Single-page UI (vanilla JS + CSS)
+│   ├── 404.html        # Custom 404 page
+│   └── policy.html     # Fair use policy page
 ├── static/
-│   ├── index.js        # Minified frontend JS
-│   ├── style.css       # Minified CSS
+│   ├── index.js        # Frontend JS (form, SSE, progress)
+│   ├── style.css       # Styles (dark/light theme)
 │   └── theme.js        # Theme toggle
+├── tests/
+│   ├── test_app.py     # Flask route & integration tests
+│   └── test_downloader.py  # Downloader unit tests
 ├── requirements.txt    # Production deps
-├── Dockerfile          # python:3.11-slim + ffmpeg + gunicorn entrypoint
-└── docker-compose.yml  # Port 5000 + /downloads volume
+├── requirements-dev.txt # Dev/test deps
+├── Dockerfile          # python:3.11-slim + ffmpeg + gunicorn (non-root)
+├── docker-compose.yml  # Port 5000 + /downloads volume + healthcheck + container hardening
+├── SECURITY.md         # Security policy & deployment checklist
+├── CHANGES.md          # Changelog
+└── LICENSE             # MIT
 ```
 
 ---
@@ -90,7 +102,7 @@ youtube-downloader/
 - **Playlist protection:** playlist params (`list`, `index`, `start_radio`, `pp`) stripped automatically — always downloads a single video
 - **Cancel:** stop an in-progress download at any time (best-effort — cannot interrupt FFmpeg post-processing)
 - **Form lock:** resolution, format, audio, and URL inputs disable while download is active
-- **Rate limiting:** no rate limit on localhost. Rate limiting (`5 downloads/hour`, `10 file serves/hour` per IP) applies only on the public-facing deployment (`youtube-downloader-web` branch with Caddy)
+- **Rate limiting:** 5 downloads/hour, 10 file serves/hour per IP (via Flask-Limiter). Global defaults: 200/day, 60/hour.
 
 ---
 
@@ -102,12 +114,32 @@ youtube-downloader/
 - **URL validation:** HTTPS only · accepted domains: `youtube.com`, `www.youtube.com`, `youtu.be`, `m.youtube.com`.
 - **SSE events:** `{"type": "progress"|"finished"|"error"|"cancelled", ...}` — browser reads from `/stream/<job_id>`.
 - **Single worker:** gunicorn `-w 1` + gevent. All routes share one in-memory job store — do not increase workers without adding a shared store (Redis, etc.).
+- **Concurrent downloads:** max 10 simultaneous downloads (semaphore). Excess requests receive a "server busy" error.
+- **Max file size:** 2 GB per download (enforced via yt-dlp).
+- **Container security:** runs as non-root user (`appuser`), read-only root filesystem, all capabilities dropped, no-new-privileges, 512 MB memory limit. See [SECURITY.md](./SECURITY.md) for full details.
+
+---
+
+## Security
+
+This project follows security best practices for a self-hosted web application:
+
+- **Rate limiting** — Flask-Limiter enforces per-IP limits on all endpoints
+- **Security headers** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- **SRI** — third-party scripts loaded with Subresource Integrity hashes
+- **Non-root container** — Dockerfile runs as `appuser`, not root
+- **Input validation** — strict allowlists on all user inputs
+- **Error sanitization** — generic messages to clients, detailed errors only in server logs
+- **UUID validation** — all job ID route parameters validated as UUIDs
+- **Resource limits** — concurrent download cap and max file size
+
+See [SECURITY.md](./SECURITY.md) for the full security policy, vulnerability reporting process, and deployment checklist.
 
 ---
 
 ## Dependencies
 
-Python 3.11, yt-dlp, FFmpeg, Flask, gunicorn, gevent.
+Python 3.11, yt-dlp, FFmpeg, Flask 3.x, Flask-Limiter, gunicorn, gevent.
 
 ---
 
@@ -140,6 +172,12 @@ Docker Hub is reachable but a specific IP timed out (Docker Hub is multi-IP; one
    sudo systemctl restart docker
    docker compose up --build -d
    ```
+
+---
+
+## Changelog
+
+See [CHANGES.md](./CHANGES.md) for a full list of changes.
 
 ---
 

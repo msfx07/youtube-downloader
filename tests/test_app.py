@@ -196,13 +196,13 @@ def test_jobstate_has_cancel_event():
 
 
 def test_cancel_unknown_job_returns_404(client):
-    resp = client.delete("/cancel/nonexistent-job")
+    resp = client.delete("/cancel/00000000-0000-0000-0000-000000000001")
     assert resp.status_code == 404
     assert "error" in resp.get_json()
 
 
 def test_cancel_running_job_returns_200(client):
-    job_id = "test-cancel-running"
+    job_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     with jobs_lock:
         jobs[job_id] = JobState(status="running", queue=StdQueue())
     resp = client.delete(f"/cancel/{job_id}")
@@ -211,7 +211,7 @@ def test_cancel_running_job_returns_200(client):
 
 
 def test_cancel_sets_cancel_event(client):
-    job_id = "test-cancel-event"
+    job_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
     with jobs_lock:
         jobs[job_id] = JobState(status="running", queue=StdQueue())
     client.delete(f"/cancel/{job_id}")
@@ -220,7 +220,7 @@ def test_cancel_sets_cancel_event(client):
 
 
 def test_cancel_finished_job_returns_409(client):
-    job_id = "test-cancel-finished"
+    job_id = "cccccccc-cccc-cccc-cccc-cccccccccccc"
     with jobs_lock:
         jobs[job_id] = JobState(status="finished", queue=StdQueue())
     resp = client.delete(f"/cancel/{job_id}")
@@ -241,7 +241,7 @@ def test_progress_hook_raises_cancelled_when_event_set():
 
 def test_run_download_cancelled_pushes_cancelled_event(tmp_path, monkeypatch):
     monkeypatch.setattr("app.DOWNLOADS_DIR", tmp_path)
-    job_id = "test-cancel-dl"
+    job_id = "dddddddd-dddd-dddd-dddd-dddddddddddd"
     q = StdQueue()
     job_obj = JobState(status="running", queue=q)
     with jobs_lock:
@@ -265,7 +265,7 @@ def test_run_download_cancelled_pushes_cancelled_event(tmp_path, monkeypatch):
 def test_run_download_success_pushes_finished(tmp_path, monkeypatch):
     monkeypatch.setattr("app.DOWNLOADS_DIR", tmp_path)
 
-    job_id = "test-dl-success"
+    job_id = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
     q = StdQueue()
     with jobs_lock:
         jobs[job_id] = JobState(status="running", queue=q)
@@ -295,7 +295,7 @@ def test_run_download_success_pushes_finished(tmp_path, monkeypatch):
 def test_run_download_error_pushes_error_event(tmp_path, monkeypatch):
     monkeypatch.setattr("app.DOWNLOADS_DIR", tmp_path)
 
-    job_id = "test-dl-error"
+    job_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
     q = StdQueue()
     with jobs_lock:
         jobs[job_id] = JobState(status="running", queue=q)
@@ -312,17 +312,17 @@ def test_run_download_error_pushes_error_event(tmp_path, monkeypatch):
 
     event = q.get_nowait()
     assert event["type"] == "error"
-    assert "unavailable" in event["message"].lower()
+    assert "Download failed" in event["message"]
 
 
 def test_stream_unknown_job_returns_404(client):
-    resp = client.get("/stream/nonexistent-job-id")
+    resp = client.get("/stream/00000000-0000-0000-0000-000000000002")
     assert resp.status_code == 404
     assert "error" in resp.get_json()
 
 
 def test_stream_known_job_returns_event_stream_content_type(client):
-    job_id = "test-stream-ct"
+    job_id = "11111111-1111-1111-1111-111111111111"
     q = StdQueue()
     q.put({"type": "finished", "filename": "test.mp4"})
     with jobs_lock:
@@ -333,7 +333,7 @@ def test_stream_known_job_returns_event_stream_content_type(client):
 
 
 def test_stream_yields_finished_event(client):
-    job_id = "test-stream-finished"
+    job_id = "22222222-2222-2222-2222-222222222222"
     q = StdQueue()
     q.put({"type": "finished", "filename": "video.mp4"})
     with jobs_lock:
@@ -346,13 +346,13 @@ def test_stream_yields_finished_event(client):
 
 
 def test_file_unknown_job_returns_404(client):
-    resp = client.get("/file/nonexistent-job")
+    resp = client.get("/file/00000000-0000-0000-0000-000000000003")
     assert resp.status_code == 404
     assert "error" in resp.get_json()
 
 
 def test_file_running_job_returns_409(client):
-    job_id = "test-file-running"
+    job_id = "33333333-3333-3333-3333-333333333333"
     with jobs_lock:
         jobs[job_id] = JobState(status="running", queue=StdQueue())
     resp = client.get(f"/file/{job_id}")
@@ -361,7 +361,7 @@ def test_file_running_job_returns_409(client):
 
 
 def test_file_error_job_returns_500(client):
-    job_id = "test-file-error"
+    job_id = "44444444-4444-4444-4444-444444444444"
     with jobs_lock:
         jobs[job_id] = JobState(status="error", queue=StdQueue(), error="Video unavailable")
     resp = client.get(f"/file/{job_id}")
@@ -369,7 +369,7 @@ def test_file_error_job_returns_500(client):
 
 
 def test_file_missing_filepath_returns_410(client):
-    job_id = "test-file-missing"
+    job_id = "55555555-5555-5555-5555-555555555555"
     with jobs_lock:
         jobs[job_id] = JobState(status="finished", queue=StdQueue(), filepath=None)
     resp = client.get(f"/file/{job_id}")
@@ -378,7 +378,7 @@ def test_file_missing_filepath_returns_410(client):
 
 
 def test_file_nonexistent_path_returns_410(client, tmp_path):
-    job_id = "test-file-gone"
+    job_id = "66666666-6666-6666-6666-666666666666"
     ghost_path = tmp_path / "gone.mp4"  # file does not exist
     with jobs_lock:
         jobs[job_id] = JobState(status="finished", queue=StdQueue(), filepath=ghost_path)
@@ -388,7 +388,7 @@ def test_file_nonexistent_path_returns_410(client, tmp_path):
 
 def test_file_success_serves_file(client, tmp_path, monkeypatch):
     monkeypatch.setattr("app.DOWNLOADS_DIR", tmp_path)
-    job_id = "test-file-ok"
+    job_id = "77777777-7777-7777-7777-777777777777"
     job_dir = tmp_path / job_id
     job_dir.mkdir()
     test_file = job_dir / "video.mp4"

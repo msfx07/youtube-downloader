@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import queue
+import re
 import shutil
 import threading
 import time
@@ -16,6 +17,8 @@ from typing import Generator
 from urllib.parse import urlparse, urlencode, parse_qsl, urlunparse
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from downloader import DownloadConfig, build_options
 import yt_dlp
@@ -28,9 +31,55 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+# --- Rate Limiting ---
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "60 per hour"],
+    storage_uri="memory://",
+)
+
+# --- Security Headers ---
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": (
+        "default-src 'self'; "
+        "script-src 'self' https://analytics.sandbox99.cc; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'"
+    ),
+}
+
+MAX_CONCURRENT_DOWNLOADS = 10
+MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB
+
+_download_semaphore = threading.Semaphore(MAX_CONCURRENT_DOWNLOADS)
+
+UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
 DOWNLOADS_DIR = Path(os.environ.get("DOWNLOADS_DIR", "/downloads"))
 JOB_TTL = 3600       # seconds before job is cleaned up
 CLEANUP_INTERVAL = 900  # seconds between cleanup runs
+
+
+@app.after_request
+def _set_security_headers(response: Response) -> Response:
+    for header, value in SECURITY_HEADERS.items():
+        response.headers[header] = value
+    return response
+
+
+def _validate_job_id(job_id: str) -> bool:
+    return bool(UUID_RE.match(job_id))
 
 
 @dataclass
@@ -150,16 +199,30 @@ def _progress_hook(d: dict, job: "JobState") -> None:
 
 
 def _run_download(job_id: str, url: str, config: DownloadConfig) -> None:
+    acquired = _download_semaphore.acquire(timeout=5)
+    if not acquired:
+        with jobs_lock:
+            job = jobs.get(job_id)
+        if job:
+            with jobs_lock:
+                job.status = "error"
+                job.error = "Server busy. Please try again later."
+            job.queue.put({"type": "error", "message": "Server busy. Please try again later."})
+        return
+
     job_dir = DOWNLOADS_DIR / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
 
     with jobs_lock:
         job = jobs.get(job_id)
     if job is None:
+        logger.warning("Job %s disappeared before download started", job_id)
+        _download_semaphore.release()
         return
 
     opts = build_options(job_dir, config)
     opts["progress_hooks"] = [lambda d: _progress_hook(d, job)]
+    opts["max_filesize"] = MAX_FILE_SIZE_BYTES
 
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -186,8 +249,8 @@ def _run_download(job_id: str, url: str, config: DownloadConfig) -> None:
         logger.error("Download failed for job %s: %s", job_id, error_msg)
         with jobs_lock:
             job.status = "error"
-            job.error = error_msg
-        job.queue.put({"type": "error", "message": error_msg})
+            job.error = "Download failed. Please check the URL and try again."
+        job.queue.put({"type": "error", "message": "Download failed. Please check the URL and try again."})
 
     except Exception as e:
         logger.exception("Unexpected error in job %s: %s", job_id, e)
@@ -195,9 +258,12 @@ def _run_download(job_id: str, url: str, config: DownloadConfig) -> None:
             job.status = "error"
             job.error = "Internal server error"
         job.queue.put({"type": "error", "message": "Internal server error"})
+    finally:
+        _download_semaphore.release()
 
 
 @app.post("/download")
+@limiter.limit("5 per hour")
 def start_download() -> Response:
     data = request.get_json(silent=True) or {}
     result = _validate_request(data)
@@ -222,6 +288,8 @@ def start_download() -> Response:
 
 @app.get("/stream/<job_id>")
 def stream(job_id: str) -> Response:
+    if not _validate_job_id(job_id):
+        return jsonify({"error": "Invalid job ID"}), 400
     with jobs_lock:
         job = jobs.get(job_id)
     if job is None:
@@ -246,6 +314,8 @@ def stream(job_id: str) -> Response:
 
 @app.delete("/cancel/<job_id>")
 def cancel_download(job_id: str) -> Response:
+    if not _validate_job_id(job_id):
+        return jsonify({"error": "Invalid job ID"}), 400
     with jobs_lock:
         job = jobs.get(job_id)
     if job is None:
@@ -257,7 +327,10 @@ def cancel_download(job_id: str) -> Response:
 
 
 @app.get("/file/<job_id>")
+@limiter.limit("10 per hour")
 def serve_file(job_id: str) -> Response:
+    if not _validate_job_id(job_id):
+        return jsonify({"error": "Invalid job ID"}), 400
     with jobs_lock:
         job = jobs.get(job_id)
 
@@ -286,5 +359,17 @@ def serve_file(job_id: str) -> Response:
     return send_file(filepath, as_attachment=True, download_name=filepath.name)
 
 
+@app.get("/health")
+def health() -> Response:
+    with jobs_lock:
+        active_jobs = sum(1 for j in jobs.values() if j.status == "running")
+    return jsonify({
+        "status": "ok",
+        "active_downloads": active_jobs,
+        "max_concurrent": MAX_CONCURRENT_DOWNLOADS,
+    })
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug, host="0.0.0.0")
