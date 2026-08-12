@@ -1,8 +1,12 @@
 FROM python:3.11-slim AS base
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends ffmpeg curl unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install deno (required by yt-dlp for YouTube JS extraction)
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh \
+    && rm -rf /tmp/deno*
 
 RUN useradd -m -r -s /usr/sbin/nologin appuser
 
