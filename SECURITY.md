@@ -47,10 +47,20 @@ Every response includes:
 - **Docker Compose hardening:**
   - Read-only root filesystem (`read_only: true`)
   - Tmpfs for `/tmp` with `noexec,nosuid` and 64 MB size limit
+  - Tmpfs for `/.gunicorn` control socket
   - All Linux capabilities dropped (`cap_drop: ALL`)
   - Privilege escalation blocked (`no-new-privileges: true`)
   - Memory limit enforced (512 MB)
   - Explicit UID:GID override (`user: "1000:1000"`)
+- **Caddy reverse proxy** (`docker-compose.caddy.yml`):
+  - TLS 1.2+ with automatic Let's Encrypt certificates
+  - HSTS with preload
+  - Security headers (CSP, X-Frame-Options, X-Content-Type-Options, etc.)
+  - `Server` and `X-Powered-By` headers stripped
+  - SSE flush for progress streaming
+  - Scanner blocking (wp-admin, .env, .git, etc.)
+  - Access logging with rotation
+  - Container hardened: read-only, cap_drop ALL, no-new-privileges, 128 MB memory limit
 
 ### Resource Limits
 - Maximum concurrent downloads: **10** (enforced via semaphore)
@@ -84,12 +94,13 @@ Security-relevant environment variables:
 
 ## Best Practices for Deployment
 
-1. **Always deploy behind a TLS-terminating reverse proxy** (Caddy, nginx, etc.)
-2. **Do not expose port 5000 directly** to the internet
-3. **Set `FLASK_DEBUG=false`** (or omit it) in production
-4. **Monitor the `/health` endpoint** for uptime checks
-5. **Keep dependencies updated** — run `pip-audit` periodically
-6. **Review Docker image** — rebuild regularly to pick up base image security patches
+1. **Use `docker-compose.caddy.yml`** for production — includes Caddy with TLS, security headers, and container hardening
+2. **Edit `Caddyfile`** — replace `localhost` with your domain and remove `tls internal` before deploying
+3. **Do not expose port 5000 directly** to the internet
+4. **Set `FLASK_DEBUG=false`** (or omit it) in production
+5. **Monitor the `/health` endpoint** for uptime checks
+6. **Keep dependencies updated** — run `pip-audit` periodically
+7. **Review Docker image** — rebuild regularly to pick up base image security patches
 
 ## Security Checklist
 
@@ -101,6 +112,7 @@ Security-relevant environment variables:
 - [ ] Container hardened: read-only fs, cap_drop ALL, no-new-privileges, memory limit
 - [ ] SRI hashes on all external scripts
 - [ ] Error messages sanitized (no internal details leaked)
-- [ ] TLS enabled via reverse proxy
+- [ ] TLS enabled via reverse proxy (Caddy auto-provisions Let's Encrypt)
+- [ ] Caddyfile configured: domain set, `tls internal` removed, email updated
 - [ ] Debug mode disabled in production
 - [ ] Healthcheck uses `python3` (no `curl` dependency in slim image)

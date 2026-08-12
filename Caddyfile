@@ -1,13 +1,7 @@
 # ── Global Options ──────────────────────────────────────────
 {
-	# Use Let's Encrypt staging for testing (remove for production)
-	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
-
 	# Production email for Let's Encrypt notifications
 	email admin@example.com
-
-	# Reduce memory usage
-	order rate_limit before basicauth
 
 	# Logging
 	log {
@@ -20,7 +14,14 @@
 }
 
 # ── Site Block ─────────────────────────────────────────────
-yourdomain.com {
+# For local testing: use localhost with self-signed TLS
+# For production: replace localhost with your domain and remove "tls internal"
+localhost {
+	# ── TLS ───────────────────────────────────────────
+	# Self-signed certs for local testing
+	# For production: remove this line, Caddy will use Let's Encrypt
+	tls internal
+
 	# ── Security Headers ────────────────────────────────
 	header {
 		# HSTS — enforce HTTPS for 1 year, include subdomains
@@ -49,16 +50,6 @@ yourdomain.com {
 		-X-Powered-By
 	}
 
-	# ── Rate Limiting ───────────────────────────────────
-	# Limit per IP: 5 requests/second to download endpoint
-	rate_limit {
-		zone download_limit {
-			key {remote_host}
-			events 5
-			window 1m
-		}
-	}
-
 	# ── Reverse Proxy ───────────────────────────────────
 	reverse_proxy web:5000 {
 		# Required for SSE progress stream — disable response buffering
@@ -82,9 +73,4 @@ yourdomain.com {
 		path /phpmyadmin* /admin* /cgi-bin* /shell*
 	}
 	respond @blocked 444
-
-	# ── TLS Configuration ───────────────────────────────
-	tls {
-		protocols tls1.2 tls1.3
-	}
 }

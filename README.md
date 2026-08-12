@@ -96,7 +96,7 @@ youtube-downloader/
 ├── docker-compose.yml      # Local dev (port 5000)
 ├── docker-compose.prod.yml # Production (container hardening)
 ├── docker-compose.caddy.yml # Production + Caddy reverse proxy (TLS, SSE)
-├── Caddyfile               # Caddy config (TLS, security headers, rate limiting)
+├── Caddyfile               # Caddy config (TLS, security headers, scanner blocking)
 ├── .dockerignore           # Build context exclusions
 ├── SECURITY.md             # Security policy & deployment checklist
 ├── CHANGES.md              # Changelog
@@ -150,7 +150,7 @@ See [SECURITY.md](./SECURITY.md) for the full security policy, vulnerability rep
 
 ## Dependencies
 
-Python 3.11, yt-dlp, FFmpeg, Flask 3.x, Flask-Limiter, gunicorn, gevent.
+Python 3.11, yt-dlp, FFmpeg, deno, Flask 3.x, Flask-Limiter, gunicorn, gevent, Caddy (optional).
 
 ---
 
