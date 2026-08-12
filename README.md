@@ -94,7 +94,9 @@ youtube-downloader/
 ├── requirements-dev.txt    # Dev/test deps
 ├── Dockerfile              # python:3.11-slim + ffmpeg + gunicorn
 ├── docker-compose.yml      # Local dev (port 5000)
-├── docker-compose.prod.yml # Production (container hardening, no port bind)
+├── docker-compose.prod.yml # Production (container hardening)
+├── docker-compose.caddy.yml # Production + Caddy reverse proxy (TLS, SSE)
+├── Caddyfile               # Caddy config (TLS, security headers, rate limiting)
 ├── .dockerignore           # Build context exclusions
 ├── SECURITY.md             # Security policy & deployment checklist
 ├── CHANGES.md              # Changelog

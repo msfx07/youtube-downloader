@@ -1,0 +1,90 @@
+# ── Global Options ──────────────────────────────────────────
+{
+	# Use Let's Encrypt staging for testing (remove for production)
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+
+	# Production email for Let's Encrypt notifications
+	email admin@example.com
+
+	# Reduce memory usage
+	order rate_limit before basicauth
+
+	# Logging
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 3
+		}
+		level INFO
+	}
+}
+
+# ── Site Block ─────────────────────────────────────────────
+yourdomain.com {
+	# ── Security Headers ────────────────────────────────
+	header {
+		# HSTS — enforce HTTPS for 1 year, include subdomains
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+		# Prevent MIME type sniffing
+		X-Content-Type-Options "nosniff"
+
+		# Prevent clickjacking
+		X-Frame-Options "DENY"
+
+		# XSS protection (legacy browsers)
+		X-XSS-Protection "1; mode=block"
+
+		# Referrer policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Permissions policy — disable camera, microphone, geolocation
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+		# Content Security Policy
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://analytics.sandbox99.cc; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"
+
+		# Remove server identification
+		-Server
+		-X-Powered-By
+	}
+
+	# ── Rate Limiting ───────────────────────────────────
+	# Limit per IP: 5 requests/second to download endpoint
+	rate_limit {
+		zone download_limit {
+			key {remote_host}
+			events 5
+			window 1m
+		}
+	}
+
+	# ── Reverse Proxy ───────────────────────────────────
+	reverse_proxy web:5000 {
+		# Required for SSE progress stream — disable response buffering
+		flush_interval -1
+
+		# Forward real client IP for per-user rate limiting in Flask
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+
+		# Health check
+		health_uri /health
+		health_interval 30s
+		health_timeout 5s
+	}
+
+	# ── Block common scanners ───────────────────────────
+	@blocked {
+		path /wp-admin* /wp-login* /xmlrpc.php* /.env /.git*
+		path /phpmyadmin* /admin* /cgi-bin* /shell*
+	}
+	respond @blocked 444
+
+	# ── TLS Configuration ───────────────────────────────
+	tls {
+		protocols tls1.2 tls1.3
+	}
+}
