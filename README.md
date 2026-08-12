@@ -87,6 +87,7 @@ youtube-downloader/
 ├── requirements-dev.txt # Dev/test deps
 ├── Dockerfile          # python:3.11-slim + ffmpeg + gunicorn (non-root)
 ├── docker-compose.yml  # Port 5000 + /downloads volume + healthcheck + container hardening
+├── docker-compose.dev.yml  # Local dev overrides (debug, auto-reload, host volume)
 ├── SECURITY.md         # Security policy & deployment checklist
 ├── CHANGES.md          # Changelog
 └── LICENSE             # MIT

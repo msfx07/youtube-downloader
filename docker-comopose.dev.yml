@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    image: youtube-downloader:v1.0
+    container_name: youtube-downloader-dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./downloads:/downloads
+    

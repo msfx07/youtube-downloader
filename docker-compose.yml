@@ -1,10 +1,10 @@
 services:
   web:
     build: .
-    image: youtube-downloader
-    container_name: youtube-downloader-localhost
-    ports:
-      - "5000:5000"
+    image: youtube-downloader:v1.0
+    container_name: youtube-downloader-web
+    # ports:
+    #   - "5000:5000"
     volumes:
       - ./downloads:/downloads
     restart: unless-stopped
